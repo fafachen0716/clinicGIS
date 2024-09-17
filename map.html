@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏥 診所地圖 - 台北市</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/0.0.124/turf.min.js"></script>
+
+    <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+            /*字體顏色藍色*/
+            background-color: rgb(6, 6, 10);
+
+        }
+        #map {
+            width: 100%;
+            height: 80vh;
+        }
+        .layer-control {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .layer-control label {
+            display: block;
+        }
+        .ol-popup {
+            position: absolute;
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            bottom: 12px;
+            left: -50px;
+            min-width: 200px;
+        }
+        .ol-popup:after, .ol-popup:before {
+            top: 100%;
+            border: solid transparent;
+            content: " ";
+            height: 0;
+            width: 0;
+            position: absolute;
+            pointer-events: none;
+        }
+        .ol-popup:after {
+            border-color: rgba(255, 255, 255, 0);
+            border-top-color: white;
+            border-width: 10px;
+            left: 48px;
+            margin-left: -10px;
+        }
+        .ol-popup:before {
+            border-color: rgba(204, 204, 204, 0);
+            border-top-color: #ccc;
+            border-width: 11px;
+            left: 48px;
+            margin-left: -11px;
+        }
+        .ol-popup-closer {
+            text-decoration: none;
+            position: absolute;
+            top: 2px;
+            right: 8px;
+        }
+        .ol-popup-closer:after {
+            content: "✖";
+        }
+    </style>
+</head>
+<body>
+    <h2 class="text-center my-4" style="color: rgb(255, 255, 255);">🏥 台北市診所地圖</h2>
+    <div id="map"></div>
+    <div class="layer-control mt-5">
+    <h4 data-bs-toggle="collapse" href="#collapseBasemap" role="button" aria-expanded="false" aria-controls="collapseBasemap">🗺️ 底圖選擇</h4>
+
+    <div class="collapse my-2" id="collapseBasemap">
+            <label><input type="radio" name="baseLayer" value="osm-standard" checked> OpenStreetMap 標準</label>
+            <label><input type="radio" name="baseLayer" value="stamen-toner"> Stamen Toner</label>
+            <label><input type="radio" name="baseLayer" value="stamen-terrain"> Stamen Terrain</label>
+            <label><input type="radio" name="baseLayer" value="cartodb-positron"> CartoDB Positron</label>
+    </div>
+
+    <h4 data-bs-toggle="collapse" href="#collapseDistrict" role="button" aria-expanded="false" aria-controls="collapseDistrict">🩺 行政區診所資料</h4>
+    <div class="collapse my-2" id="collapseDistrict">
+        <label><input type="checkbox" class="district-toggle" data-district="中正區" checked> 中正區<span class="clinic-count"></span></label>
+
+        <label><input type="checkbox" class="district-toggle" data-district="大同區" checked> 大同區<span class="clinic-count"></span></label>
+        <label><input type="checkbox" class="district-toggle" data-district="中山區" checked> 中山區<span class="clinic-count"></span></label>
+        <label><input type="checkbox" class="district-toggle" data-district="松山區" checked> 松山區<span class="clinic-count"></span></label>
+        <label><input type="checkbox" class="district-toggle" data-district="大安區" checked> 大安區<span class="clinic-count"></span></label>
+        <label><input type="checkbox" class="district-toggle" data-district="萬華區" checked> 萬華區<span class="clinic-count"></span></label>
+        <label><input type="checkbox" class="district-toggle" data-district="信義區" checked> 信義區<span class="clinic-count"></span></label>
+        <label><input type="checkbox" class="district-toggle" data-district="士林區" checked> 士林區<span class="clinic-count"></span></label>
+        <label><input type="checkbox" class="district-toggle" data-district="北投區" checked> 北投區<span class="clinic-count"></span></label>
+        <label><input type="checkbox" class="district-toggle" data-district="內湖區" checked> 內湖區<span class="clinic-count"></span></label>
+        <label><input type="checkbox" class="district-toggle" data-district="南港區" checked> 南港區<span class="clinic-count"></span></label>
+        <label><input type="checkbox" class="district-toggle" data-district="文山區" checked> 文山區<span class="clinic-count"></span></label>
+        
+    
+        
+        <!-- 根據實際行政區名稱生成選擇框 -->
+ 
+        <!-- 添加其他行政區 -->
+    </div>
+
+    <h4 data-bs-toggle="collapse" href="#collapseLayer" role="button" aria-expanded="false" aria-controls="collapseLayer">📌 圖資</h4>
+
+    <div class="collapse my-2" id="collapseLayer">
+            <label><input type="checkbox" class="data-toggle" data-dataset="average-income"> 所得平均數<span class="clinic-count"></span></label>
+            <label><input type="checkbox" class="data-toggle" data-dataset="median-income"> 所得中位數<span class="clinic-count"></span></label>
+            <label><input type="checkbox" class="data-toggle" data-dataset="population"> 人口數<span class="clinic-count"></span></label>
+            <label>✨更多圖資準備中✨</label>
+    </div>
+
+    </div>
+    <!-- Popup HTML -->
+    <div id="popup" class="ol-popup">
+        <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+        <div id="popup-content"></div>
+    </div>
+
+    <script>
+        // 預設台北市的中心座標 (經度, 緯度)
+        var taipeiCenter = [121.5654, 25.0330]; // 台北市信義區經緯度
+        taipeiCenter = ol.proj.fromLonLat(taipeiCenter); // 轉換經緯度為地圖投影座標
+
+  // 建立地圖圖層
+  var map = new ol.Map({
+    target: 'map',
+    layers: [
+    
+        new ol.layer.Tile({
+            source: new ol.source.OSM(), // OpenStreetMap 標準
+            title: 'osm-standard'
+        }),
+        new ol.layer.Tile({
+            source: new ol.source.XYZ({
+                url: 'https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}@2x.png'
+            }),
+            title: 'stamen-toner',
+            visible: false
+        }),
+        new ol.layer.Tile({
+            source: new ol.source.XYZ({
+                url: 'https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}@2x.png'
+            }),
+            title: 'stamen-terrain',
+            visible: false
+        }),
+        new ol.layer.Tile({
+            source: new ol.source.XYZ({
+                url: 'https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+            }),
+            title: 'cartodb-positron',
+            visible: false
+        })
+    ],
+    view: new ol.View({
+        center: taipeiCenter,
+        zoom: 12 // 預設縮放比例
+    })
+});
+
+// 圖層切換功能
+document.querySelectorAll('input[name="baseLayer"]').forEach(function(element) {
+    element.addEventListener('change', function() {
+        var selectedLayer = this.value;
+        map.getLayers().forEach(function(layer) {
+            // 只切換底圖圖層的顯示狀態
+            if (layer instanceof ol.layer.Tile) {
+                layer.setVisible(layer.get('title') === selectedLayer);
+            }
+        });
+    });
+});
+
+
+// 添加 tpe_income.geojson 作為區域圖層
+var incomeLayer = new ol.layer.Vector({
+    source: new ol.source.Vector({
+        url: 'tpe_income.geojson', // 替換為實際檔案路徑
+        format: new ol.format.GeoJSON()
+    }),
+    style: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: '#319FD3',
+            width: 2
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(0, 255, 255, 0.1)'
+        })
+    })
+});
+map.addLayer(incomeLayer);
+
+// 診所資料圖層（保持獨立）
+var vectorSources = {}; // 儲存各行政區的資料來源
+var vectorLayers = {}; // 儲存各行政區的診所圖層
+fetch('taipei_clinics_with_coordinates.csv')
+    .then(response => response.text())
+    .then(csvText => {
+        Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                let districtCounts = {}; // 儲存每個行政區的診所數量
+
+                results.data.forEach(row => {
+                    let name = row['機構名稱'];
+                    let phone = row['電話'];
+                    let address = row['地址'];
+                    let latitude = parseFloat(row['緯度']);
+                    let longitude = parseFloat(row['經度']);
+                    let district = row['區名'];
+
+                    if (!isNaN(latitude) && !isNaN(longitude)) {
+                        let coordinates = ol.proj.fromLonLat([longitude, latitude]);
+
+                        if (!vectorSources[district]) {
+                            vectorSources[district] = new ol.source.Vector();
+                            vectorLayers[district] = new ol.layer.Vector({
+                                source: vectorSources[district],
+                                visible: true,
+                                title: district
+                            });
+                            map.addLayer(vectorLayers[district]);
+                        }
+
+                        let marker = new ol.Feature({
+                            geometry: new ol.geom.Point(coordinates),
+                            name: name,
+                            phone: phone,
+                            address: address
+                        });
+
+                        marker.setStyle(new ol.style.Style({
+                            image: new ol.style.Circle({
+                                radius: 6,
+                                fill: new ol.style.Fill({
+                                    color: 'red'
+                                }),
+                                stroke: new ol.style.Stroke({
+                                    color: 'white',
+                                    width: 2
+                                })
+                            })
+                        }));
+
+                        vectorSources[district].addFeature(marker);
+
+                        // 計算每個行政區的診所數量
+                        if (!districtCounts[district]) {
+                            districtCounts[district] = 0;
+                        }
+                        districtCounts[district]++;
+                    }
+                });
+
+                // 更新行政區選擇框中的診所數量
+                document.querySelectorAll('.district-toggle').forEach(function(element) {
+                    let district = element.getAttribute('data-district');
+                    if (districtCounts[district]) {
+                        element.nextElementSibling.innerHTML = //district+ 
+                        ' (' + districtCounts[district] + '間診所)';
+                    }
+                });
+
+                // 根據選擇顯示或隱藏行政區的診所
+                document.querySelectorAll('.district-toggle').forEach(function(element) {
+                    element.addEventListener('change', function() {
+                        let district = this.getAttribute('data-district');
+                        if (vectorLayers[district]) {
+                            vectorLayers[district].setVisible(this.checked);
+                        }
+                    });
+                });
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+
+// 建立 Overlay 來顯示 popup
+var popup = new ol.Overlay({
+    element: document.getElementById('popup'),
+    autoPan: false,
+
+});
+map.addOverlay(popup);
+
+// 顯示 popup 的內容
+map.on('singleclick', function (evt) {
+    var feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+        return feature;
+    });
+
+    if (feature) {
+        var properties = feature.getProperties();
+    
+        // 判斷是否是診所
+        if (properties.name && properties.phone && properties.address) {
+            // 診所的 popup
+            var coordinates = feature.getGeometry().getCoordinates();
+            popup.setPosition(coordinates);
+    
+            var content = '<b>' + feature.get('name') + '</b><br>' +
+                          '電話: ' + feature.get('phone') + '<br>' +
+                          '地址: ' + feature.get('address');
+    
+            document.getElementById('popup-content').innerHTML = content;
+            document.getElementById('popup').style.display = 'block';
+        } else {
+            // 如果是 GeoJSON 區域
+            var geometry = feature.getGeometry();
+            coordinates = ol.extent.getCenter(geometry.getExtent());
+
+            // 計算該區域內的診所數量
+            var clinicCount = 0;
+            for (var district in vectorSources) {
+                vectorSources[district].getFeatures().forEach(function(clinicFeature) {
+                    var clinicCoords = clinicFeature.getGeometry().getCoordinates();
+                    if (geometry.intersectsCoordinate(clinicCoords)) {
+                        clinicCount++;
+                    }
+                });
+            }
+
+            // 顯示區域內診所數量和其他區域屬性
+            var population = properties['POPULATION'] || 0;
+            var maleToFemaleRatio = (properties['人口數_女'] !== 0) ? 
+                (properties['人口數_男'] / properties['人口數_女']).toFixed(2) : 'N/A';
+            
+            popup.setPosition(coordinates);
+    
+            var content = '<b>選定區域資料:</b><br>' +
+                          properties['VILLAGE'] + '<br>' +
+                          '<b>人口數:</b> ' + properties['人口數_人口數'] + '<br>' +
+                          '<b>所得平均數:</b> ' + Math.round(properties['2022台灣所得data_平均數'] / 10) + '萬<br>' +
+                          '<b>所得中位數:</b> ' + Math.round(properties['2022台灣所得data_中位數'] / 10) + '萬<br>' +
+                          '<b>男女比例:</b> ' + maleToFemaleRatio + '<br>' +
+                          '<b>診所數量:</b> ' + clinicCount + ' 間診所'+ '<br>' +
+                          '<b>一間診所服務</b> ' + Math.round(properties['人口數_人口數']/clinicCount) + '人';
+    
+            document.getElementById('popup-content').innerHTML = content;
+            document.getElementById('popup').style.display = 'block';
+        }
+    } else {
+        document.getElementById('popup').style.display = 'none';
+    }
+});
+
+    </script>
+
+    <script>
+    //更新地圖樣式
+ // 根據不同的數據設定樣式
+function getStyleByDataset(feature, dataset) {
+    let value, ranges, colors;
+
+    // 根據 dataset 設定不同的級距範圍與對應顏色
+    if (dataset === 'average-income') {
+        value = feature.get('2022台灣所得data_平均數');
+        ranges = [500, 1000, 1500, 2000]; // 例如所得平均數的級距
+        colors = [
+            'rgba(255, 235, 190, 0.6)',
+            'rgba(255, 204, 128, 0.6)',
+            'rgba(255, 153, 85, 0.6)',
+            'rgba(255, 77, 77, 0.6)'
+        ];
+    } else if (dataset === 'median-income') {
+        value = feature.get('2022台灣所得data_中位數');
+        ranges = [300, 600, 900, 1200]; // 例如所得中位數的級距
+        colors = [
+            'rgba(230, 245, 208, 0.6)',
+            'rgba(170, 220, 130, 0.6)',
+            'rgba(110, 200, 80, 0.6)',
+            'rgba(50, 150, 30, 0.6)'
+        ];
+    } else if (dataset === 'population') {
+        value = feature.get('人口數_人口數');
+        ranges = [1000, 3000, 5000, 10000]; // 例如人口數的級距
+        colors = [
+            'rgba(190, 235, 255, 0.6)',
+            'rgba(128, 204, 255, 0.6)',
+            'rgba(85, 153, 255, 0.6)',
+            'rgba(77, 77, 255, 0.6)'
+        ];
+    }
+
+    // 根據級距設定顏色
+    let color = getColorForValue(value, ranges, colors);
+
+    return new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: color
+        }),
+        stroke: new ol.style.Stroke({
+            color: '#333',
+            width: 1
+        })
+    });
+}
+
+// 根據 value 落在哪個範圍來選擇對應的顏色
+function getColorForValue(value, ranges, colors) {
+    for (let i = 0; i < ranges.length; i++) {
+        if (value < ranges[i]) {
+            return colors[i];
+        }
+    }
+    // 若超過最大範圍，使用最後一個顏色
+    return colors[colors.length - 1];
+}
+    // 更新圖層樣式的函式
+    function updateLayerStyle(dataset) {
+        incomeLayer.setStyle(function(feature) {
+            return getStyleByDataset(feature, dataset);
+        });
+    }
+
+// 當使用者勾選不同的數據時觸發
+document.querySelectorAll('.data-toggle').forEach(function(element) {
+    element.addEventListener('change', function() {
+        // 取消其他勾選框的選擇
+        document.querySelectorAll('.data-toggle').forEach(function(el) {
+            if (el !== element) {
+                el.checked = false;
+            }
+        });
+
+        // 取得目前選中的 dataset
+        let dataset = this.getAttribute('data-dataset');
+
+        // 更新圖層
+        updateLayerStyle(dataset);
+    });
+});
+    
+    </script>
+</body>
+</html>
