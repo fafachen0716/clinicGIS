@@ -210,7 +210,7 @@ map.addLayer(incomeLayer);
 // 診所資料圖層（保持獨立）
 var vectorSources = {}; // 儲存各行政區的資料來源
 var vectorLayers = {}; // 儲存各行政區的診所圖層
-fetch('taipei_clinics_with_coordinates.csv')
+fetch('台北市診所＿經緯度.csv')
     .then(response => response.text())
     .then(csvText => {
         Papa.parse(csvText, {

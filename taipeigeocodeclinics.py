@@ -3,7 +3,7 @@ import requests
 import time
 
 # Google Maps Geocoding API 設定
-API_KEY = 'AIzaSyCzCN5nS8BPPM5F912YzQ93PsD9pDTgYJQ'
+API_KEY = 'AIzaSyDf8WyeIH00AkiOZBzTHyNwRUCnOSV_xog'
 base_url = "https://maps.googleapis.com/maps/api/geocode/json"
 
 # 定義函數：根據地址取得經緯度
@@ -21,11 +21,11 @@ def get_geocode(address):
     return None, None
 
 # 讀取 CSV 檔案
-df = pd.read_csv('台北市診所.csv')
+df = pd.read_csv('新北市診所.csv')
 
 # 清理縣市區名，保留區名
 def clean_area_name(area):
-    return area.replace('臺北市', '').replace('台北市', '').strip()
+    return area.replace('新北市', '').replace('新北市', '').strip()
 
 df['區名'] = df['縣市區名'].apply(clean_area_name)
 
