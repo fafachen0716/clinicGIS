@@ -21,11 +21,13 @@ def get_geocode(address):
     return None, None
 
 # 讀取 CSV 檔案
-df = pd.read_csv('新北市診所.csv')
+df = pd.read_csv('高雄市診所.csv')
 
 # 清理縣市區名，保留區名
 def clean_area_name(area):
-    return area.replace('新北市', '').replace('新北市', '').strip()
+    if isinstance(area, str):
+        return area.replace('高雄市', '').replace('高雄市', '').strip()
+    return area
 
 df['區名'] = df['縣市區名'].apply(clean_area_name)
 
@@ -33,14 +35,18 @@ df['區名'] = df['縣市區名'].apply(clean_area_name)
 df['緯度'] = None
 df['經度'] = None
 
+# 紀錄處理ID
+processed_id = 0
+
 # 遍歷每一行並根據地址獲取經緯度
 for idx, row in df.iterrows():
     address = f"{row['縣市區名']}{row['地址']}"
     lat, lng = get_geocode(address)
     df.at[idx, '緯度'] = lat
     df.at[idx, '經度'] = lng
-    print(f"處理 {address}: 緯度={lat}, 經度={lng}")
+    processed_id += 1
+    print(f"處理{processed_id}, {address}: 緯度={lat}, 經度={lng}")
     time.sleep(0.1)  # 防止請求過於頻繁
 
 # 將結果寫入新的 CSV 檔案
-df.to_csv('taipei_clinics_with_coordinates.csv', index=False)
+df.to_csv('高雄市診所_經緯度.csv', index=False)
