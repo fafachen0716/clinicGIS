@@ -330,8 +330,11 @@
             <label><input type="checkbox" class="data-toggle" data-dataset="average-income"> 所得平均數<span class="clinic-count"></span></label>
             <label><input type="checkbox" class="data-toggle" data-dataset="median-income"> 所得中位數<span class="clinic-count"></span></label>
             <label><input type="checkbox" class="data-toggle" data-dataset="population"> 人口數<span class="clinic-count"></span></label>
+            <label><input type="checkbox" class="data-toggle" data-dataset="elder-index"> 老化指數<span class="clinic-count"></span></label>
             <label><input type="checkbox" class="data-toggle" data-dataset="none"> 關閉<span class="clinic-count"></span></label>
-            <label>✨更多圖資準備中✨</label>
+            <!--<label>✨更多圖資準備中✨</label>-->
+            <!-- 色票展示區域 -->
+            <div id="color-legend" style="margin-top: 10px;"></div>
     </div>
 
     <h4 data-bs-toggle="collapse" href="#collapseSpecialty" role="button" aria-expanded="false" aria-controls="collapseSpecialty">➕ 科別</h4>
@@ -663,7 +666,7 @@ document.querySelectorAll('.jump-to-city').forEach(button => {
 });
 
 // 添加台北市的收入圖層
-addIncomeLayer('Taipei', 'tpe_income.geojson');
+addIncomeLayer('Taipei', 'tpe_income4.geojson');
 
 // 添加新北市的收入圖層
 addIncomeLayer('New Taipei', 'newtpe_income.geojson');
@@ -768,6 +771,9 @@ function loadClinicData(cityName, csvFilePath) {
 
                     results.data.forEach(row => {
                         let name = row['機構名稱'];
+                        if(name === undefined){
+                            return;
+                        }
                         let phone = row['電話'];
                         let address = row['地址'];
                         let district = row['區名'];
@@ -813,7 +819,7 @@ function loadClinicData(cityName, csvFilePath) {
                                     TCM_doctor: TCM_doctor,
                                     dentist: dentist,
                                     pharmacist: pharmacist,
-                                    specialties: specialty
+                                    specialties: specialty,
                                 });
 
                                 let fillColor = specialtyColors[specialty];
@@ -960,7 +966,8 @@ fetch('醫學中心.csv')
                             TCM_doctor: TCM_doctor,
                             dentist: dentist,
                             pharmacist: pharmacist,
-                            specialties: specialties
+                            specialties: specialties,
+
                         });
                         console.log(marker);
                         marker.setStyle(new ol.style.Style({
@@ -1086,7 +1093,9 @@ map.on('singleclick', function (evt) {
             var population = properties['POPULATION'] || 0;
             var maleToFemaleRatio = (properties['POPULATION_M'] !== 0) ? 
                 (properties['POPULATION_M'] / properties['POPULATION_F']).toFixed(2) : 'N/A';
-            
+            var ElderIndex = properties['ElderIndex'] || "暫無資料";
+            console.log(ElderIndex);
+            console.log(properties);
             popup.setPosition(coordinates);
     
             var content = '<b>🗺️' +
@@ -1097,8 +1106,9 @@ map.on('singleclick', function (evt) {
                           '<b>💰中位數:</b> ' + Math.round(properties['2022台灣所得data_中位數'] / 10) + '萬<br>' +
                           '<b>👫男女比例:</b> ' + maleToFemaleRatio + '<br>' +
                           '<b>🏥診所數量:</b> ' + clinicCount + ' 間診所'+ '<br>' +
-                          '<b>一間診所服務</b> ' + (clinicCount > 0 ? Math.round(properties['POPULATION'] / clinicCount) + '人' : '無法計算');
-    
+                          '<b>一間診所服務</b> ' + (clinicCount > 0 ? Math.round(properties['POPULATION'] / clinicCount) + '人<br>' : '無法計算<br>')+
+                          '<b>老化指數</b> ' + properties['ElderIndex'] ;
+
             document.getElementById('popup-content').innerHTML = content;
             document.getElementById('popup').style.display = 'block';
             infodisplay = 0;
@@ -1138,20 +1148,35 @@ function getStyleByDataset(feature, dataset, cityData) {
         value = feature.get(cityData.averageIncomeField);
         ranges = cityData.averageIncomeRanges;
         colors = cityData.averageIncomeColors;
+        clearColorLegend();
+        showColorLegend(ranges, colors);
     } else if (dataset === 'median-income') {
         console.log('median-income');
         value = feature.get(cityData.medianIncomeField);
         ranges = cityData.medianIncomeRanges;
         colors = cityData.medianIncomeColors;
+        clearColorLegend();
+        showColorLegend(ranges, colors);
     } else if (dataset === 'population') {
         console.log('population');
         value = feature.get(cityData.populationField);
         ranges = cityData.populationRanges;
         colors = cityData.populationColors;
+        clearColorLegend();
+        showColorLegend(ranges, colors);
+    } else if (dataset === 'elder-index') {
+        console.log('elder-index');
+        value = feature.get(cityData.elderIndexField);
+        ranges = cityData.elderIndexRanges;
+        colors = cityData.elderIndexColors;
+        clearColorLegend();
+        showColorLegend(ranges, colors);
     } else {
         value = 0;
         ranges = [0];
         colors = ['rgba(255, 255, 255, 0.1)'];
+        clearColorLegend();
+        showColorLegend(ranges, colors);
     }
 
     // 根據級距設定顏色
@@ -1185,6 +1210,38 @@ function updateLayerStyle(dataset, incomeLayer, cityData) {
         return getStyleByDataset(feature, dataset, cityData);
     });
 }
+
+    // 顯示色票的函數
+    function showColorLegend(ranges, colors) {
+        const legendDiv = document.getElementById('color-legend');
+        legendDiv.innerHTML = ''; // 先清空之前的內容
+        ranges.forEach((range, index) => {
+            const colorBox = document.createElement('div');
+            colorBox.style.display = 'inline-block';
+            colorBox.style.width = '30px';
+            colorBox.style.height = '20px';
+            colorBox.style.backgroundColor = colors[index];
+            colorBox.style.marginRight = '5px';
+
+            const label = document.createElement('span');
+            label.innerText = range;
+
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.marginBottom = '5px';
+            wrapper.appendChild(colorBox);
+            wrapper.appendChild(label);
+
+            legendDiv.appendChild(wrapper);
+        });
+    }
+
+    // 清除色票的函數
+    function clearColorLegend() {
+        const legendDiv = document.getElementById('color-legend');
+        legendDiv.innerHTML = ''; // 清除色票區域的所有內容
+    }
 
 // 設置事件監聽器的函式
 function setupDataToggleListeners(incomeLayer, cityData) {
@@ -1236,9 +1293,17 @@ const taipeiData = {
         'rgba(110, 200, 80, 0.6)',
         'rgba(50, 150, 30, 0.6)'
     ],
-    populationField: '人口數_人口數',
+    populationField: 'POPULATION',
     populationRanges: [1000, 3000, 5000, 10000],
     populationColors: [
+        'rgba(190, 235, 255, 0.6)',
+        'rgba(128, 204, 255, 0.6)',
+        'rgba(85, 153, 255, 0.6)',
+        'rgba(77, 77, 255, 0.6)'
+    ],
+    elderIndexField: 'ElderIndex',
+    elderIndexRanges: [0.1, 0.3, 0.5, 0.8],
+    elderIndexColors: [
         'rgba(190, 235, 255, 0.6)',
         'rgba(128, 204, 255, 0.6)',
         'rgba(85, 153, 255, 0.6)',
@@ -1291,7 +1356,7 @@ const taichungData = {
         'rgba(130, 190, 100, 0.6)',
         'rgba(80, 130, 50, 0.6)'
     ],
-    populationField: '人口數_人口數',
+    populationField: 'POPULATION',
     populationRanges: [1500, 3500, 5500, 9000],
     populationColors: [
         'rgba(210, 240, 255, 0.6)',
@@ -1343,7 +1408,7 @@ const kaohsiungData = {
         'rgba(140, 195, 115, 0.6)',
         'rgba(90, 145, 65, 0.6)'
     ],
-    populationField: '人口數_人口數',
+    populationField: 'POPULATION',
     populationRanges: [1200, 2500, 4000, 6500],
     populationColors: [
         'rgba(220, 245, 255, 0.6)',
@@ -1369,7 +1434,7 @@ const taoyuanData = {
         'rgba(135, 195, 110, 0.6)',
         'rgba(85, 145, 60, 0.6)'
     ],
-    populationField: '人口數_人口數',
+    populationField: 'POPULATION',
     populationRanges: [1500, 4000, 7000, 10000],
     populationColors: [
         'rgba(210, 240, 255, 0.6)',
@@ -1506,44 +1571,62 @@ if (taoyuanLayer) {
 // 診所搜尋功能
 var clinicList = document.getElementById('clinic-list');
 var clinicSearch = document.getElementById('clinic-search');
-fetch('新北市診所_經緯度.csv')
-    .then(response => response.text())
-    .then(csvText => {
-        console.log('CSV data loaded successfully.'); // Debug: 確認CSV數據已經加載
-        Papa.parse(csvText, {
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                console.log('Parsed CSV data:', results.data); // Debug: 顯示解析後的數據
-                results.data.forEach(row => {
-                    let name = row['機構名稱'];
-                    let district = row['區名'];
-                    let latitude = parseFloat(row['緯度']);
-                    let longitude = parseFloat(row['經度']);
+var addedClinics = new Set(); // 用來追蹤已添加的診所，避免重複
 
-                    if (!isNaN(latitude) && !isNaN(longitude)) {
-                        let option = document.createElement('option');
-                        option.value = name; // 將診所名稱設為選項的值
-                        option.text = name + ' (' + district + ')';
-                        option.setAttribute('data-lat', latitude);   // 存儲緯度
-                        option.setAttribute('data-lon', longitude);  // 存儲經度
-                        clinicList.appendChild(option);
-                        //console.log('Added option:', option.text); // Debug: 確認選項被添加
-                    }
+    // 定義讀取CSV檔案並將診所資料加入選單的函數
+    function loadClinicsFromCSV(csvFiles) {
+        csvFiles.forEach(file => {
+            fetch(file)
+                .then(response => response.text())
+                .then(csvText => {
+                    console.log('CSV data loaded from', file); // Debug: 確認CSV檔案已加載
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            console.log('Parsed CSV data from', file, results.data); // Debug: 顯示解析後的數據
+                            results.data.forEach(row => {
+                                let name = row['機構名稱'];
+                                let district = row['區名'];
+                                let latitude = parseFloat(row['緯度']);
+                                let longitude = parseFloat(row['經度']);
+
+                                if (!isNaN(latitude) && !isNaN(longitude) && !addedClinics.has(name)) {
+                                    let option = document.createElement('option');
+                                    option.value = name; // 將診所名稱設為選項的值
+                                    option.text = name + ' (' + district + ')';
+                                    option.setAttribute('data-lat', latitude);   // 存儲緯度
+                                    option.setAttribute('data-lon', longitude);  // 存儲經度
+                                    clinicList.appendChild(option);
+                                    addedClinics.add(name); // 將診所名稱加入追蹤集合中，避免重複
+                                    // console.log('Added option:', option.text); // Debug: 確認選項被添加
+                                }
+                            });
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading CSV from', file, error); // Debug: 加載CSV出錯
                 });
-            }
         });
-    })
-    .catch(error => {
-        console.error('Error loading CSV:', error); // Debug: 加載CSV出錯
+    }
+
+    // 診所搜尋功能 (可以自定義搜尋邏輯)
+    clinicSearch.addEventListener('input', function() {
+        let keyword = clinicSearch.value.trim();
+        console.log('Search keyword:', keyword); // Debug: 顯示使用者輸入的搜索關鍵字
     });
 
-clinicSearch.addEventListener('input', function() {
-    let keyword = clinicSearch.value.trim();
-    console.log('Search keyword:', keyword); // Debug: 顯示使用者輸入的搜索關鍵字
-
-    // 此處可以自定義搜尋邏輯，例如過濾或高亮顯示符合的選項
-});
+    // 讀取多個CSV檔案
+    const csvFiles = [
+        '新北市診所_經緯度.csv',
+        '台北市診所_經緯度.csv', 
+        '桃園市診所_經緯度.csv',
+        '臺南市診所_經緯度.csv',
+        '臺中市診所_經緯度.csv',
+        '高雄市診所_經緯度.csv'
+    ];
+loadClinicsFromCSV(csvFiles);
 
 // 監聽輸入框的 change 事件
 clinicSearch.addEventListener('change', function() {
