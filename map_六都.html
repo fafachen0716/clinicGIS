@@ -1109,7 +1109,10 @@ map.on('singleclick', function (evt) {
                           '<b>💰中位數:</b> ' + Math.round(properties['2022台灣所得data_中位數'] / 10) + '萬<br>' +
                           '<b>👫男女比例:</b> ' + maleToFemaleRatio + '<br>' +
                           '<b>🏥診所數量:</b> ' + clinicCount + ' 間診所'+ '<br>' +
-                          '<b>一間診所服務</b> ' + (clinicCount > 0 ? Math.round(properties['POPULATION'] / clinicCount) + '人<br>' : '無法計算<br>')+
+                          '<b>🎯一間診所服務</b> ' + (clinicCount > 0 ? Math.round(properties['POPULATION'] / clinicCount) + '人<br>' : '無法計算<br>')+
+                          '<b>👶🏻幼年人口:</b> ' + properties['POPULATION_14-'] + '<br>' +
+                          '<b>🧓🏻老年人口:</b> ' + properties['POPULATION_65+'] + '<br>' +
+                          '<hr>'+
                           '<b>老化指數</b> ' + properties['ElderIndex'] ;
 
             document.getElementById('popup-content').innerHTML = content;
