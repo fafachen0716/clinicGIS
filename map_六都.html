@@ -327,8 +327,8 @@
     <h4 data-bs-toggle="collapse" href="#collapseLayer" role="button" aria-expanded="false" aria-controls="collapseLayer">📌 圖資</h4>
 
     <div class="collapse my-2" id="collapseLayer">
-            <label><input type="checkbox" class="data-toggle" data-dataset="average-income"> 所得平均數<span class="clinic-count"></span></label>
-            <label><input type="checkbox" class="data-toggle" data-dataset="median-income"> 所得中位數<span class="clinic-count"></span></label>
+            <label><input type="checkbox" class="data-toggle" data-dataset="average-income" checked> 所得平均數（千元）</span></label>
+            <label><input type="checkbox" class="data-toggle" data-dataset="median-income"> 所得中位數（千元）<span class="clinic-count"></span></label>
             <label><input type="checkbox" class="data-toggle" data-dataset="population"> 人口數<span class="clinic-count"></span></label>
             <label><input type="checkbox" class="data-toggle" data-dataset="elder-index"> 老化指數<span class="clinic-count"></span></label>
             <label><input type="checkbox" class="data-toggle" data-dataset="none"> 關閉<span class="clinic-count"></span></label>
@@ -681,7 +681,7 @@ addIncomeLayer('Tainan', 'tainan_income.geojson');
 addIncomeLayer('Kaohsiung', 'kaohsiung_income.geojson');
 
 // 添加桃園市的收入圖層
-addIncomeLayer('Taoyuan', 'taoyuan_income.geojson');
+addIncomeLayer('Taoyuan', 'taoyuan_income3.geojson');
 
 /// 隨機生成顏色的函數
 function getRandomColor() {
@@ -1093,7 +1093,10 @@ map.on('singleclick', function (evt) {
             var population = properties['POPULATION'] || 0;
             var maleToFemaleRatio = (properties['POPULATION_M'] !== 0) ? 
                 (properties['POPULATION_M'] / properties['POPULATION_F']).toFixed(2) : 'N/A';
-            var ElderIndex = properties['ElderIndex'] || "暫無資料";
+            //轉成數字先
+            
+            var ElderIndex = (properties['ElderIndex'] ? Number(properties['ElderIndex']).toFixed(2) : "暫無資料");
+
             console.log(ElderIndex);
             console.log(properties);
             popup.setPosition(coordinates);
@@ -1302,13 +1305,18 @@ const taipeiData = {
         'rgba(77, 77, 255, 0.6)'
     ],
     elderIndexField: 'ElderIndex',
-    elderIndexRanges: [0.1, 0.3, 0.5, 0.8],
+    elderIndexRanges: [0.1, 0.4, 0.7, 1.0, 1.3, 1.6, 1.8, 2.0],
     elderIndexColors: [
-        'rgba(190, 235, 255, 0.6)',
-        'rgba(128, 204, 255, 0.6)',
-        'rgba(85, 153, 255, 0.6)',
-        'rgba(77, 77, 255, 0.6)'
+        'rgba(190, 235, 255, 0.6)',  // 淡藍色
+        'rgba(170, 220, 255, 0.6)',  // 更深的淡藍色
+        'rgba(128, 204, 255, 0.6)',  // 中間藍色
+        'rgba(85, 153, 255, 0.6)',   // 中度藍色
+        'rgba(77, 130, 255, 0.6)',   // 深藍色
+        'rgba(64, 100, 230, 0.6)',   // 更深藍色
+        'rgba(51, 80, 200, 0.6)',    // 接近深藍
+        'rgba(40, 60, 180, 0.6)'     // 最深藍
     ]
+
 };
 
 // 新北市資料配置
@@ -1336,7 +1344,13 @@ const newTaipeiData = {
     'rgba(128, 204, 255, 0.6)',
     'rgba(85, 153, 255, 0.6)',
     'rgba(77, 77, 255, 0.6)'
+    ],   
+    elderIndexRanges: [0.1],
+    elderIndexColors: [
+        'rgba(190, 235, 255, 0.01)',  // 淡藍色
     ]
+
+    
 };
 
 const taichungData = {
@@ -1363,6 +1377,14 @@ const taichungData = {
         'rgba(150, 200, 255, 0.6)',
         'rgba(100, 150, 255, 0.6)',
         'rgba(50, 100, 255, 0.6)'
+    ],
+    elderIndexField: 'ElderIndex',
+    elderIndexRanges: [0.1, 0.3, 0.5, 0.8],
+    elderIndexColors: [
+        'rgba(190, 235, 255, 0.6)',
+        'rgba(128, 204, 255, 0.6)',
+        'rgba(85, 153, 255, 0.6)',
+        'rgba(77, 77, 255, 0.6)'
     ]
 };
 const tainanData = {
@@ -1389,6 +1411,14 @@ const tainanData = {
         'rgba(140, 195, 255, 0.6)',
         'rgba(90, 145, 255, 0.6)',
         'rgba(40, 95, 255, 0.6)'
+    ],
+    elderIndexField: 'ElderIndex',
+    elderIndexRanges: [0.1, 0.3, 0.5, 0.8],
+    elderIndexColors: [
+        'rgba(190, 235, 255, 0.6)',
+        'rgba(128, 204, 255, 0.6)',
+        'rgba(85, 153, 255, 0.6)',
+        'rgba(77, 77, 255, 0.6)'
     ]
 };
 const kaohsiungData = {
@@ -1415,6 +1445,14 @@ const kaohsiungData = {
         'rgba(160, 205, 255, 0.6)',
         'rgba(110, 155, 255, 0.6)',
         'rgba(60, 105, 255, 0.6)'
+    ],
+    elderIndexField: 'ElderIndex',
+    elderIndexRanges: [0.1, 0.3, 0.5, 0.8],
+    elderIndexColors: [
+        'rgba(190, 235, 255, 0.6)',
+        'rgba(128, 204, 255, 0.6)',
+        'rgba(85, 153, 255, 0.6)',
+        'rgba(77, 77, 255, 0.6)'
     ]
 };
 const taoyuanData = {
@@ -1441,7 +1479,20 @@ const taoyuanData = {
         'rgba(150, 205, 255, 0.6)',
         'rgba(100, 155, 255, 0.6)',
         'rgba(50, 105, 255, 0.6)'
+    ],
+    elderIndexField: 'ElderIndex',
+    elderIndexRanges: [0.1, 0.4, 0.7, 1.0, 1.3, 1.6, 1.8, 2.0],
+    elderIndexColors: [
+        'rgba(190, 235, 255, 0.6)',  // 淡藍色
+        'rgba(170, 220, 255, 0.6)',  // 更深的淡藍色
+        'rgba(128, 204, 255, 0.6)',  // 中間藍色
+        'rgba(85, 153, 255, 0.6)',   // 中度藍色
+        'rgba(77, 130, 255, 0.6)',   // 深藍色
+        'rgba(64, 100, 230, 0.6)',   // 更深藍色
+        'rgba(51, 80, 200, 0.6)',    // 接近深藍
+        'rgba(40, 60, 180, 0.6)'     // 最深藍
     ]
+
 };
 
 
