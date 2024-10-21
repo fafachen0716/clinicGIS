@@ -1104,16 +1104,17 @@ map.on('singleclick', function (evt) {
             var content = '<b>🗺️' +
                           properties['VILLAGE'] + '<br>' +
                           '<hr>'+
-                          '<b>🗿人口數:</b> ' + properties['POPULATION'] + '<br>' +
+                          '<b>🗿人口數:</b> ' + properties['POPULATION'] + '人<br>' +
                           '<b>💰所得平均數:</b> ' + Math.round(properties['2022台灣所得data_平均數'] / 10) + '萬<br>' +
                           '<b>💰中位數:</b> ' + Math.round(properties['2022台灣所得data_中位數'] / 10) + '萬<br>' +
                           '<b>👫男女比例:</b> ' + maleToFemaleRatio + '<br>' +
                           '<b>🏥診所數量:</b> ' + clinicCount + ' 間診所'+ '<br>' +
                           '<b>🎯一間診所服務</b> ' + (clinicCount > 0 ? Math.round(properties['POPULATION'] / clinicCount) + '人<br>' : '無法計算<br>')+
-                          '<b>👶🏻幼年人口:</b> ' + properties['POPULATION_14-'] + '<br>' +
-                          '<b>🧓🏻老年人口:</b> ' + properties['POPULATION_65+'] + '<br>' +
-                          '<hr>'+
-                          '<b>老化指數</b> ' + properties['ElderIndex'] ;
+                          '<b>👶🏻幼年人口:</b> ' + (properties['POPULATION_14-'] ? properties['POPULATION_14-'] + '人' : '暫無資料') + '<br>' +
+                          '<b>🧓🏻老年人口:</b> ' + (properties['POPULATION_65+'] ? properties['POPULATION_65+'] + '人' : '暫無資料') + '<br>' +
+                          '<hr>' +
+                          '<b>老化指數:</b> ' + (properties['ElderIndex'] ? properties['ElderIndex'] : '暫無資料');
+
 
             document.getElementById('popup-content').innerHTML = content;
             document.getElementById('popup').style.display = 'block';
