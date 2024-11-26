@@ -12,6 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/0.0.124/turf.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDf8WyeIH00AkiOZBzTHyNwRUCnOSV_xog&libraries=places"></script>
 
     <style>
         
@@ -100,8 +101,10 @@
     <h2 class="text-center my-4" style="color: rgb(255, 255, 255);">🏥 六都診所地圖</h2>
     <div id="map"></div>
     <div class="layer-control mt-5">
+
     <h4 data-bs-toggle="collapse" href="#collapseBasemap" role="button" aria-expanded="false" aria-controls="collapseBasemap">🗺️ 底圖選擇</h4>
 
+    
     <div class="collapse my-2" id="collapseBasemap">
         <label><input type="radio" name="baseLayer" value="osm-standard"> OpenStreetMap 標準</label>
         <label><input type="radio" name="baseLayer" value="cartodb-dark"> CartoDB Dark Matter</label>
@@ -368,9 +371,12 @@
     </div>
     <!-- Hover顯示里的名稱 -->
     <div id="info" style="position: absolute; background: white; padding: 5px; border: 1px solid black; display: none;"></div>
-    <!-- 診所資料查詢 -->
     <div class="search-container">
-        <input type="text" id="clinic-search" list="clinic-list" placeholder="搜尋診所..." class="form-control search-input">
+            <!-- 診所資料查詢 -->
+
+    <input type="text" id="clinic-search" list="clinic-list" placeholder="👨‍⚕️ 搜尋診所..." class="form-control search-input">
+                    <!--加入google地點搜尋-->
+    <input type="text" class="search-input form-control my-1" id="search-input form-control" placeholder="🔍 搜尋地點">
         <datalist id="clinic-list"></datalist>
     </div>
     
@@ -753,12 +759,12 @@ const vibrantColors = [
 ];
 
 var vectorSources = {}; // 儲存各行政區的資料來源
-
+var vectorLayers = {}; // 儲存各行政區的診所圖層
+var specialtyColors = {}; // 儲存科別顏色的對應表
+let colorIndex = 0; // 用來記錄當前顏色索引
+let specialtySet = new Set(); // 儲存科別的集合
 function loadClinicData(cityName, csvFilePath) {
-    var vectorLayers = {}; // 儲存各行政區的診所圖層
-    var specialtyColors = {}; // 儲存科別顏色的對應表
-    let colorIndex = 0; // 用來記錄當前顏色索引
-    let specialtySet = new Set(); // 儲存科別的集合
+
     
     fetch(csvFilePath)
         .then(response => response.text())
@@ -883,31 +889,32 @@ function loadClinicData(cityName, csvFilePath) {
                         });
                     });
 
-                    // 根據選擇顯示或隱藏特定科別的診所
-                    document.querySelectorAll('.specialty-toggle').forEach(function(element) {
-                        element.addEventListener('change', function() {
-                            let specialty = this.getAttribute('data-specialty');
-                            let checked = this.checked;
-                            for (let district in vectorSources) {
-                                vectorSources[district].getFeatures().forEach(function(feature) {
-                                    if (feature.get('specialties').includes(specialty)) {
-                                        feature.setStyle(new ol.style.Style({
-                                            image: new ol.style.Circle({
-                                                radius: 6,
-                                                fill: new ol.style.Fill({
-                                                    color: checked ? specialtyColors[specialty] : 'rgba(0, 0, 0, 0)'
-                                                }),
-                                                stroke: new ol.style.Stroke({
-                                                    color: 'white',
-                                                    width: 1.5
+                        // 根據選擇顯示或隱藏特定科別的診所
+                        document.querySelectorAll('.specialty-toggle').forEach(function(element) {
+                            element.addEventListener('change', function() {
+                                let specialty = this.getAttribute('data-specialty');
+                                let checked = this.checked;
+                                for (let district in vectorSources) {
+                                    vectorSources[district].getFeatures().forEach(function(feature) {
+                                        if (feature.get('specialties').includes(specialty)) {
+                                            feature.setStyle(new ol.style.Style({
+                                                image: new ol.style.Circle({
+                                                    radius: 6,
+                                                    fill: new ol.style.Fill({
+                                                        color: checked ? specialtyColors[specialty] : 'rgba(0, 0, 0, 0)'
+                                                    }),
+                                                    stroke: new ol.style.Stroke({
+                                                        color: 'white',
+                                                        width: 1.5
+                                                    })
                                                 })
-                                            })
-                                        }));
-                                    }
-                                });
-                            }
+                                            }));
+                                        }
+                                    });
+                                }
+                            });
                         });
-                    });
+
                 }
             });
         })
@@ -1218,37 +1225,37 @@ function updateLayerStyle(dataset, incomeLayer, cityData) {
     });
 }
 
-    // 顯示色票的函數
-    function showColorLegend(ranges, colors) {
-        const legendDiv = document.getElementById('color-legend');
-        legendDiv.innerHTML = ''; // 先清空之前的內容
-        ranges.forEach((range, index) => {
-            const colorBox = document.createElement('div');
-            colorBox.style.display = 'inline-block';
-            colorBox.style.width = '30px';
-            colorBox.style.height = '20px';
-            colorBox.style.backgroundColor = colors[index];
-            colorBox.style.marginRight = '5px';
+// 顯示色票的函數
+function showColorLegend(ranges, colors) {
+    const legendDiv = document.getElementById('color-legend');
+    legendDiv.innerHTML = ''; // 先清空之前的內容
+    ranges.forEach((range, index) => {
+        const colorBox = document.createElement('div');
+        colorBox.style.display = 'inline-block';
+        colorBox.style.width = '30px';
+        colorBox.style.height = '20px';
+        colorBox.style.backgroundColor = colors[index];
+        colorBox.style.marginRight = '5px';
 
-            const label = document.createElement('span');
-            label.innerText = range;
+        const label = document.createElement('span');
+        label.innerText = range;
 
-            const wrapper = document.createElement('div');
-            wrapper.style.display = 'flex';
-            wrapper.style.alignItems = 'center';
-            wrapper.style.marginBottom = '5px';
-            wrapper.appendChild(colorBox);
-            wrapper.appendChild(label);
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.marginBottom = '5px';
+        wrapper.appendChild(colorBox);
+        wrapper.appendChild(label);
 
-            legendDiv.appendChild(wrapper);
-        });
-    }
+        legendDiv.appendChild(wrapper);
+    });
+}
 
-    // 清除色票的函數
-    function clearColorLegend() {
-        const legendDiv = document.getElementById('color-legend');
-        legendDiv.innerHTML = ''; // 清除色票區域的所有內容
-    }
+// 清除色票的函數
+function clearColorLegend() {
+    const legendDiv = document.getElementById('color-legend');
+    legendDiv.innerHTML = ''; // 清除色票區域的所有內容
+}
 
 // 設置事件監聽器的函式
 function setupDataToggleListeners(incomeLayer, cityData) {
@@ -1282,6 +1289,63 @@ function setupDataToggleListeners(incomeLayer, cityData) {
         });
     });
 }
+// 取得全選/全不選按鈕和科別容器
+let selectAllSpecialties = document.getElementById('select-all-specialties');
+let specialtyContainer = document.getElementById('specialty-container');
+
+// 根據選擇顯示或隱藏特定科別的診所
+function updateClinicStyles() {
+    // 這裡遍歷所有的 specialty-toggle checkbox，並更新對應的地圖點樣式
+    document.querySelectorAll('.specialty-toggle').forEach(function(element) {
+        let specialty = element.getAttribute('data-specialty');
+        let checked = element.checked;
+        
+        for (let district in vectorSources) {
+            vectorSources[district].getFeatures().forEach(function(feature) {
+                if (feature.get('specialties').includes(specialty)) {
+                    feature.setStyle(new ol.style.Style({
+                        image: new ol.style.Circle({
+                            radius: 6,
+                            fill: new ol.style.Fill({
+                                color: checked ? specialtyColors[specialty] : 'rgba(0, 0, 0, 0)' // 根據勾選狀態設置顏色
+                            }),
+                            stroke: new ol.style.Stroke({
+                                color: 'white',
+                                width: 1.5
+                            })
+                        })
+                    }));
+                }
+            });
+        }
+    });
+}
+
+// 每次 checkbox 改變時更新對應的樣式
+document.querySelectorAll('.specialty-toggle').forEach(function(element) {
+    element.addEventListener('change', function() {
+        updateClinicStyles(); // 重新更新所有樣式
+    });
+});
+
+// 全選/全不選按鈕的事件監聽器
+selectAllSpecialties.addEventListener('change', function() {
+    let checkboxes = specialtyContainer.querySelectorAll('.specialty-toggle');
+    let isChecked = selectAllSpecialties.checked; // 確認全選按鈕的勾選狀態
+
+    // 將所有 checkbox 設置為與全選按鈕一致的狀態
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = isChecked;
+    });
+
+    console.log(isChecked ? '已全選' : '已全不選'); // Debug: 確認全選或全不選的狀態
+
+    // 更新地圖上的樣式
+    updateClinicStyles(); // 全選/全不選後重新設定所有樣式
+});
+
+
+
 // 台北市資料配置
 const taipeiData = {
     averageIncomeField: '2022台灣所得data_平均數',
@@ -1773,9 +1837,49 @@ function getFeatureByName(name) {
 }
 
 
+//google地點搜尋功能
+// 設定搜尋框
+const searchBox = document.getElementById('search-input form-control');
+console.log(searchBox);
+const autocomplete = new google.maps.places.Autocomplete(searchBox);
+console.log(autocomplete);
+// 當搜尋選擇結果時
+autocomplete.addListener('place_changed', function () {
+    const place = autocomplete.getPlace();
 
+    if (place.geometry) {
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
 
-    </script>
+        // 更新 OpenLayers 地圖的中心
+        const coords = ol.proj.fromLonLat([lng, lat]);
+
+        map.getView().animate({
+            center: coords,
+            zoom: 15, // 設定想要的縮放比例
+            duration: 1000 // 動畫持續時間（毫秒）
+        });
+        // 在地圖上新增標記
+        if (marker) {
+            marker.setPosition(coords);
+        } else {
+            marker = new ol.Feature({
+                geometry: new ol.geom.Point(coords)
+            });
+
+            const vectorSource = new ol.source.Vector({
+                features: [marker]
+            });
+
+            const markerLayer = new ol.layer.Vector({
+                source: vectorSource
+            });
+
+            map.addLayer(markerLayer);
+        }
+    }
+});
+</script>
 
 
 </body>
