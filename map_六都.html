@@ -675,7 +675,7 @@ document.querySelectorAll('.jump-to-city').forEach(button => {
 addIncomeLayer('Taipei', 'tpe_income4.geojson');
 
 // 添加新北市的收入圖層
-addIncomeLayer('New Taipei', 'newtpe_income.geojson');
+addIncomeLayer('New Taipei', 'newtpe_population copy.geojson');
 
 // 添加台中市的收入圖層
 addIncomeLayer('Taichung', 'taichung_population.geojson');
@@ -1120,7 +1120,7 @@ map.on('singleclick', function (evt) {
                           '<b>👶🏻幼年人口:</b> ' + (properties['POPULATION_14-'] ? properties['POPULATION_14-'] + '人' : '暫無資料') + '<br>' +
                           '<b>🧓🏻老年人口:</b> ' + (properties['POPULATION_65+'] ? properties['POPULATION_65+'] + '人' : '暫無資料') + '<br>' +
                           '<hr>' +
-                          '<b>老化指數:</b> ' + (properties['ElderIndex'] ? properties['ElderIndex'] : '暫無資料');
+                          '<b>老化指數:</b> ' + (properties['ElderIndex'] ? Number(properties['ElderIndex']).toFixed(2) : "暫無資料");
 
 
             document.getElementById('popup-content').innerHTML = content;
